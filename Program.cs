@@ -25,6 +25,7 @@ namespace rm2
             if (searchpatterns.Count == 0)
             {
                 PrintUsage();
+                Environment.Exit(2);
             }
             else
             {
@@ -38,8 +39,10 @@ namespace rm2
                 catch (Exception ex)
                 {
                     Console.WriteLine("** ERROR: " + ex.Message);
+                    Environment.Exit(1);
                 }
             }
+            Environment.Exit(0);
         }
 
         private static void Delete(string dir, bool recurse)
