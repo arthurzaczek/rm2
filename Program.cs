@@ -20,7 +20,7 @@ namespace rm2
     {
         static void Main(string[] args)
         {
-            var dirs = args.Where(a => !a.StartsWith("-")).ToList();            
+            var dirs = args.Where(a => !a.StartsWith("-")).ToList();
             var recurse = args.Where(a => a.StartsWith("-")).Any(a => a.Contains("R"));
 
             if (dirs.Count == 0)
@@ -40,9 +40,13 @@ namespace rm2
                         watch.Start();
 
                         Delete(d, recurse, ref counter);
-                        Console.WriteLine(".");
-                        
-                        Console.WriteLine("elapsed time: {0}", watch.Elapsed);
+                        if (counter >= 100)
+                        {
+                            // a dot was printed, insert a newline
+                            Console.WriteLine();
+                        }
+                        watch.Stop();
+                        Console.WriteLine("deleted {0:n0} directories/files in {1}, that would be {2:n2} items/sec", counter, watch.Elapsed, (double)counter / watch.Elapsed.TotalSeconds);
                     }
                 }
                 catch (Exception ex)
@@ -70,14 +74,21 @@ namespace rm2
                 foreach (var file in LongPathDirectory.EnumerateFiles(dir))
                 {
                     LongPathFile.Delete(file);
-                    if (++counter % 100 == 0)
-                    {
-                        Console.Write(".");
-                    }
+                    UpdateCounter(ref counter);
                 }
 
                 LongPathDirectory.Delete(dir);
+                UpdateCounter(ref counter);
             }
+        }
+
+        private static int UpdateCounter(ref int counter)
+        {
+            if (++counter % 100 == 0)
+            {
+                Console.Write(".");
+            }
+            return counter;
         }
 
         private static void PrintUsage()
@@ -86,6 +97,8 @@ namespace rm2
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("  -R Recurse");
+            Console.WriteLine();
+            Console.WriteLine("Output: Each dot represents 100 directories/files deleted");
         }
     }
 }
