@@ -1,6 +1,7 @@
 ﻿using Microsoft.Experimental.IO;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -19,10 +20,10 @@ namespace rm2
     {
         static void Main(string[] args)
         {
-            var searchpatterns = args.Where(a => !a.StartsWith("-")).ToList();            
+            var dirs = args.Where(a => !a.StartsWith("-")).ToList();            
             var recurse = args.Where(a => a.StartsWith("-")).Any(a => a.Contains("R"));
 
-            if (searchpatterns.Count == 0)
+            if (dirs.Count == 0)
             {
                 PrintUsage();
                 Environment.Exit(2);
@@ -31,9 +32,17 @@ namespace rm2
             {
                 try
                 {
-                    foreach (var s in searchpatterns)
+                    foreach (var d in dirs)
                     {
-                        Delete(s, recurse);
+                        var watch = new Stopwatch();
+                        int counter = 0;
+                        Console.WriteLine("deleting{0} \"{1}\"", recurse ? " recurse" : string.Empty, LongPathCommon.NormalizeLongPath(d));
+                        watch.Start();
+
+                        Delete(d, recurse, ref counter);
+                        Console.WriteLine(".");
+                        
+                        Console.WriteLine("elapsed time: {0}", watch.Elapsed);
                     }
                 }
                 catch (Exception ex)
@@ -45,7 +54,7 @@ namespace rm2
             Environment.Exit(0);
         }
 
-        private static void Delete(string dir, bool recurse)
+        private static void Delete(string dir, bool recurse, ref int counter)
         {
             if (!recurse)
             {
@@ -55,12 +64,16 @@ namespace rm2
             {
                 foreach (var subdir in LongPathDirectory.EnumerateDirectories(dir))
                 {
-                    Delete(subdir, true);
+                    Delete(subdir, true, ref counter);
                 }
 
                 foreach (var file in LongPathDirectory.EnumerateFiles(dir))
                 {
                     LongPathFile.Delete(file);
+                    if (++counter % 100 == 0)
+                    {
+                        Console.Write(".");
+                    }
                 }
 
                 LongPathDirectory.Delete(dir);
